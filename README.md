@@ -7,6 +7,7 @@ Small helper to deal with the verbosity of azure cli.
 ## Requirements
 
 - yq
+- newt (for whiptail)
 - azure cli
 
 ## Usage
