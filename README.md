@@ -2,6 +2,8 @@
 
 Small helper to deal with the verbosity of azure cli.
 
+![](media/screenshot1.png)
+
 ## Requirements
 
 - yq
