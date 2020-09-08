@@ -18,10 +18,11 @@ function menu() {
 
         OPTION=$(whiptail \
             --title "Azure CLI" \
-            --menu "Current sub: $CURRENT_SUBSCRIPTION" 15 60 4 \
+            --menu "Current sub: $CURRENT_SUBSCRIPTION" 20 80 4 \
             "relogin" "Logout + Login" \
             "refresh" "Refresh subscriptions" \
             "subscription" "Select subscription" \
+            "kubeconfig" "Get kubeconfig (not fully implemented)" \
             3>&1 1>&2 2>&3 || echo "")
 
         case $OPTION in
@@ -57,6 +58,30 @@ function menu() {
             fi
             ;;
 
+        "kubeconfig")
+            YAML=$(az aks list -o yaml)
+            LENGTH=$(echo "$YAML" | yq r - --length)
+
+            CLUSTERS=()
+            for x in $(seq 1 "$LENGTH"); do
+                # shellcheck disable=SC2034
+                index=$((x - 1))
+                CLUSTERS+=("$(echo "$YAML" | yq r - [$index].fqdn)")
+                CLUSTERS+=("")
+            done
+
+            CLUSTER=$(
+                whiptail \
+                    --title "Select cluster" \
+                    --menu "Choose an option" 30 100 20 \
+                    "${CLUSTERS[@]}" 3>&1 1>&2 2>&3 || echo ""
+            )
+
+            if [[ -n "$CLUSTER" ]]; then
+                echo "not implemented"
+
+            fi
+            ;;
         "")
             exit 1
             ;;
