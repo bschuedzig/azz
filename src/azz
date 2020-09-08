@@ -1,0 +1,67 @@
+#!/bin/bash
+set -euo pipefail
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+if [[ "$DIR" != "/usr/local/bin" ]]; then
+    echo "Trying to install azz to /usr/local/bin"
+    ln -s "$DIR/azz" /usr/local/bin/azz || :
+
+    echo "Executing /usr/local/bin/azz"
+    exec "/usr/local/bin/azz"
+fi
+
+function menu() {
+
+    while true; do
+        CURRENT_SUBSCRIPTION=$(az account show -o yaml | yq r - 'name')
+
+        OPTION=$(whiptail \
+            --title "Azure CLI" \
+            --menu "Current sub: $CURRENT_SUBSCRIPTION" 15 60 4 \
+            "relogin" "Logout + Login" \
+            "refresh" "Refresh subscriptions" \
+            "subscription" "Select subscription" \
+            3>&1 1>&2 2>&3 || echo "")
+
+        case $OPTION in
+        "relogin")
+            az logout || :
+            az login
+            ;;
+        "refresh")
+            az account list --refresh
+            ;;
+        "subscription")
+            YAML=$(az account list -o yaml)
+            LENGTH=$(echo "$YAML" | yq r - --length)
+
+            SUBS=()
+
+            for x in $(seq 1 "$LENGTH"); do
+                # shellcheck disable=SC2034
+                index=$((x - 1))
+                SUBS+=("$(echo "$YAML" | yq r - [$index].id)")
+                SUBS+=(" - $(echo "$YAML" | yq r - [$index].name)")
+            done
+
+            SUB=$(
+                whiptail \
+                    --title "Select subscription" \
+                    --menu "Choose an option" 30 100 20 \
+                    "${SUBS[@]}" 3>&1 1>&2 2>&3 || echo ""
+            )
+
+            if [[ -n "$SUB" ]]; then
+                az account set --subscription "$SUB"
+            fi
+            ;;
+
+        "")
+            exit 1
+            ;;
+        esac
+    done
+}
+
+menu
